@@ -53,22 +53,29 @@ class DAO:
 	finally:
 	    c.close()
 
-    def exfilter(self, status=None, mimetype=None,filename=None):
-	if status == None:
-	    status = '?'
-	if mimetype == None:
-	    mimetype = '%'
-	if filename == None:
-	    filename = '%'
+    def exfilter(self, **options):
+	if not "status" in options:
+	    options["status"] = '?' # default to untagged files
+
+	limit = ""
+	if "limit" in options:
+	    limit = "LIMIT %d" % options["limit"]
+
+	where = "WHERE 1"
+	if "status" in options:
+	    where += " AND status='%s'" % options["status"]
+	if "mimetype" in options:
+	    where += " AND mimetype LIKE '%s'" % options["mimetype"]
+	if "filename" in options:
+	    where += " AND ptath.path LIKE '%s'" % options["filename"]
 
 	c=self.db.cursor()
 	try:
 	    c.execute("""SELECT DISTINCT file.hash,file.mimetype, path.path 
 				FROM file JOIN path USING (hash)
-				WHERE status = %s
-				AND mimetype LIKE %s
-				AND path.path LIKE %s
-				""", (status, mimetype, filename)); 
+				%s
+				%s
+				""" % (where, limit))
 	    while True:
 		row = c.fetchone()
 		if row:

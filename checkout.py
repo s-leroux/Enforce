@@ -13,10 +13,11 @@ dao = DAO()
 
 mt=None
 #mt="video/mpeg"
-mt="image/jpeg"
+#mt="image/jpeg"
 #mt="image/gif"
+#mt="image/png"
 fn=None
-# mt=None # "video/mpeg"
+mt="video/%"
 #fn="%.exe"
 
 for dir in (config.ExfilterDirectory, config.OKDirectory, 
@@ -25,7 +26,7 @@ for dir in (config.ExfilterDirectory, config.OKDirectory,
 		print "W: Creating", dir
 		os.mkdir(dir)
 
-for (hash, mimetype, path) in dao.exfilter(mimetype=mt,filename=fn):
+for (hash, mimetype, path) in dao.exfilter(mimetype=mt,limit=2000):
     ext = mimetypes.guess_extension(mimetype)
     src = path
     dst = os.path.join(config.ExfilterDirectory, "%s%s") % (hash,ext)
