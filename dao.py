@@ -23,7 +23,7 @@ class DAO:
 				hash CHAR(32) NOT NULL,
 				mimetype CHAR(64) NOT NULL,
 				size INT(10),
-				status ENUM('?', 'X', 'OK') DEFAULT '?',
+				status ENUM('?', 'X', 'OK','COPYRIGHT') DEFAULT '?',
 				PRIMARY KEY(hash),
 				INDEX(mimetype)
 			    ) ENGINE INNODB""")
@@ -74,6 +74,7 @@ class DAO:
 	    c.execute("""SELECT DISTINCT file.hash,file.mimetype, path.path 
 				FROM file JOIN path USING (hash)
 				%s
+				ORDER BY file.hash
 				%s
 				""" % (where, limit))
 	    while True:
