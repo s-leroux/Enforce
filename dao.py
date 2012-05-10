@@ -16,26 +16,38 @@ class DAO:
 				    user=config.DBUser)
 	
 	self.createDB()
+	self.updateDBVersion()
 
     def createDB(self):
-	c = self.db.cursor()
-	c.execute("""CREATE TABLE IF NOT EXISTS file (
-				hash CHAR(32) NOT NULL,
-				mimetype CHAR(64) NOT NULL,
-				size INT(10),
-				status ENUM('?', 'X', 'OK','COPYRIGHT') DEFAULT '?',
-				PRIMARY KEY(hash),
-				INDEX(mimetype)
-			    ) ENGINE INNODB""")
-	c.execute("""CREATE TABLE IF NOT EXISTS path (
-				hash CHAR(32) NOT NULL,
-				date DATETIME NOT NULL,
-				path VARCHAR(255) NOT NULL,
-				owner CHAR(20) NOT NULL,
-				PRIMARY KEY(date, path),
-				INDEX(owner),
-				FOREIGN KEY (hash) REFERENCES file(hash)
-			    ) ENGINE INNODB""")
+	self.runSQLScript("./CreateDB.sql")
+
+    def updateDBVersion(self):
+	version = int(self.getDBVersion())
+	c=self.db.cursor();
+	if version < 1:
+	    self.runSQLScript("./UpdateDBToVersion1.sql")
+
+    def runSQLScript(self,script):
+	c=self.db.cursor()
+	try:
+	    with open(script, "rt") as f:
+		# MySQLdb cursors are missing the 'executescript' method...
+		script = f.read()
+		for statement in script.split(";"):
+		    print "SQL: %s" % statement
+		    c.execute(statement)
+		self.db.commit()
+	finally:
+	    c.close()
+
+    def getDBVersion(self):
+	c=self.db.cursor()
+	try:
+	    c.execute("""SELECT value FROM config WHERE name='version'""")
+	    row = c.fetchone();
+	    return row[0]
+	finally:
+	    c.close()
 
     def insertFile(self,file):
 	c=self.db.cursor()
