@@ -31,6 +31,12 @@ ALTER TABLE path DROP COLUMN fullname;
 ALTER TABLE file CHANGE status status enum('?','X','OK','COPYRIGHT')
 				    NOT NULL DEFAULT '?';
 
+CREATE TABLE IF NOT EXISTS `config` (
+  `name` char(64) NOT NULL DEFAULT '',
+  `value` char(255) DEFAULT NULL,
+  PRIMARY KEY (`name`)
+) ENGINE=InnoDB;
+
 UPDATE config SET value='1' where name='version';
 
 COMMIT;
