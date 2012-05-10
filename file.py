@@ -14,6 +14,13 @@ class File:
 	self.fullName = os.path.join(root, name)
 	(self.dirName, self.baseName) = os.path.split(self.fullName)
 	self.size = os.path.getsize(self.fullName)
+
+	stat = os.stat(self.fullName)
+	self.size = stat.st_size
+	self.mtime = stat.st_mtime
+	self.atime = stat.st_atime
+	self.ctime = stat.st_ctime
+
 	try:
 	    self.owner = self.root.split(os.sep)[3]
 	except IndexError:

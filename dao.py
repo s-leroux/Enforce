@@ -25,15 +25,18 @@ class DAO:
 	filterwarnings('default', category = MySQLdb.Warning)
 
     def updateDBVersion(self):
-	version = self.getDBVersion()
-	if version == None:
+	c=self.db.cursor()
+	c.execute("SHOW TABLES")
+	if ("file",) not in c.fetchall(): # assume no table
+	    Log.echo("INFO", "Creating DB");
 	    self.createDB()
-	    version = self.getDBVersion()
-
-	version = int(version)
-	if version < 1:
-	    Log.echo("INFO", "Updating to DB version 1");
-	    self.runSQLScript("./sql/UpdateDBToVersion1.sql")
+	c.close()
+	
+	version = int(self.getDBVersion())
+	for v in (1,2):
+	    if version < v:
+		Log.echo("INFO", "Updating DB to version %d" % v);
+		self.runSQLScript("./sql/UpdateDBToVersion%d.sql" % v)
 
     def runSQLScript(self,script):
 	c=self.db.cursor()
@@ -59,7 +62,7 @@ class DAO:
 	    row = c.fetchone();
 	    return row[0]
 	except:
-	    return None
+	    return 0
 	finally:
 	    c.close()
 
@@ -76,11 +79,27 @@ class DAO:
 			    (file.baseName, file.dirName))
 	    # c = self.db.cursor()
 	    c.execute("""INSERT IGNORE
-			    INTO node (hash, date, owner, pid)
-			    SELECT %s, %s, %s, path.id
+			    INTO node (hash, date, owner, mtime, ctime, atime, pid)
+			    SELECT %s, %s, %s, 
+				    FROM_UNIXTIME(%s), 
+				    FROM_UNIXTIME(%s), 
+				    FROM_UNIXTIME(%s), path.id
 				FROM path
 				WHERE basename = %s AND dirname = %s""",
-			    (file.hash, theDate, file.owner,file.baseName, file.dirName))
+			    (file.hash, theDate, file.owner,
+			     file.mtime, file.ctime, file.atime, 
+			     file.baseName, file.dirName))
+	    self.db.commit()
+	finally:
+	    c.close()
+
+    def done(self):
+	"""Record the index date in the DB. Should be called after
+	the last 'insertFile' call."""
+	c=self.db.cursor()
+	try:
+	    c.execute("""INSERT IGNORE INTO session(date) VALUES(%s)""",
+			theDate)
 	    self.db.commit()
 	finally:
 	    c.close()

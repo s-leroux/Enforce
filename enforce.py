@@ -25,4 +25,4 @@ for root, dirs, files in os.walk(config.BaseDirectory):
 	    processFile(dao, file)
 	except IOError as (errno, strerror):
 	    print "E : IOError", errno, "while processing", name, "(",strerror,")"
-
+dao.done()

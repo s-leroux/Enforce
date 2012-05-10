@@ -38,6 +38,7 @@ CREATE TABLE IF NOT EXISTS `config` (
   PRIMARY KEY (`name`)
 ) ENGINE=InnoDB;
 
-UPDATE config SET value='1' where name='version';
+DELETE FROM config WHERE name='version';
+INSERT config(name,value) VALUES('version','1');
 
 COMMIT;
