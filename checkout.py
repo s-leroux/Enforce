@@ -18,6 +18,7 @@ mt=None
 #mt="image/png"
 fn=None
 mt="video/%"
+mt="audio/mpeg"
 #fn="%.exe"
 
 for dir in (config.ExfilterDirectory, config.OKDirectory, 
@@ -27,16 +28,15 @@ for dir in (config.ExfilterDirectory, config.OKDirectory,
 		os.mkdir(dir)
 
 prevdst = ""
-for (hash, mimetype, path) in dao.exfilter(mimetype=mt,limit=2000):
-
+for (hash, mimetype, path,file) in dao.exfilter(mimetype=mt,limit=2000):
     ext = mimetypes.guess_extension(mimetype)
-    src = path
+    src = os.path.join(path,file)
     dst = os.path.join(config.ExfilterDirectory, "%s%s") % (hash,ext)
     if dst != prevdst:
-        prevdst = dst
         try:    
-    	    print ">", dst,"(",src,")"
     	    shutil.copy2(src, dst)
+    	    print ">", dst,"(",src,")"
+	    prevdst = dst
         except IOError, e:	
     	    print "X", dst,"(",src,")", e.args[1]
     else:

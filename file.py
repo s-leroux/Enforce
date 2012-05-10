@@ -12,6 +12,7 @@ class File:
 	self.root = root
 	self.name = name
 	self.fullName = os.path.join(root, name)
+	(self.dirName, self.baseName) = os.path.split(self.fullName)
 	self.size = os.path.getsize(self.fullName)
 	try:
 	    self.owner = self.root.split(os.sep)[3]

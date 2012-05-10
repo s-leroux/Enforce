@@ -19,13 +19,13 @@ class DAO:
 	self.updateDBVersion()
 
     def createDB(self):
-	self.runSQLScript("./CreateDB.sql")
+	self.runSQLScript("./sql/CreateDB.sql")
 
     def updateDBVersion(self):
 	version = int(self.getDBVersion())
 	c=self.db.cursor();
 	if version < 1:
-	    self.runSQLScript("./UpdateDBToVersion1.sql")
+	    self.runSQLScript("./sql/UpdateDBToVersion1.sql")
 
     def runSQLScript(self,script):
 	c=self.db.cursor()
@@ -34,8 +34,10 @@ class DAO:
 		# MySQLdb cursors are missing the 'executescript' method...
 		script = f.read()
 		for statement in script.split(";"):
-		    print "SQL: %s" % statement
-		    c.execute(statement)
+		    statement = statement.strip()
+		    if statement != "":
+			print "SQL: %s" % statement
+			c.execute(statement)
 		self.db.commit()
 	finally:
 	    c.close()
@@ -56,11 +58,17 @@ class DAO:
 			    INTO file (hash, mimetype, size)
 			    VALUES (%s, %s, %s)""",
 			    (file.hash, file.mimetype, file.size))
+	    c.execute("""INSERT IGNORE
+			    INTO path (basename, dirname)
+			    VALUES (%s, %s)""",
+			    (file.baseName, file.dirName))
 	    # c = self.db.cursor()
 	    c.execute("""INSERT IGNORE
-			    INTO path (hash, date, path, owner)
-			    VALUES (%s, %s, %s, %s)""",
-			    (file.hash, theDate, file.fullName, file.owner))
+			    INTO node (hash, date, owner, pid)
+			    SELECT %s, %s, %s, path.id
+				FROM path
+				WHERE basename = %s AND dirname = %s""",
+			    (file.hash, theDate, file.owner,file.baseName, file.dirName))
 	    self.db.commit()
 	finally:
 	    c.close()
@@ -79,12 +87,20 @@ class DAO:
 	if "mimetype" in options:
 	    where += " AND mimetype LIKE '%s'" % options["mimetype"]
 	if "filename" in options:
-	    where += " AND ptath.path LIKE '%s'" % options["filename"]
+	    where += " AND basename LIKE '%s'" % options["filename"]
 
 	c=self.db.cursor()
 	try:
-	    c.execute("""SELECT DISTINCT file.hash,file.mimetype, path.path 
-				FROM file JOIN path USING (hash)
+	    print("""SELECT DISTINCT file.hash,file.mimetype, path.dirname, path.basename 
+				FROM file JOIN node USING (hash)
+					    INNER JOIN path ON node.pid = path.id
+				%s
+				ORDER BY file.hash
+				%s
+				""" % (where, limit))
+	    c.execute("""SELECT DISTINCT file.hash,file.mimetype, path.dirname, path.basename 
+				FROM file JOIN node USING (hash)
+					    INNER JOIN path ON node.pid = path.id
 				%s
 				ORDER BY file.hash
 				%s

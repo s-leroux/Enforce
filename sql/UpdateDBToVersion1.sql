@@ -10,20 +10,26 @@ CREATE TABLE path (
 	    id INT NOT NULL AUTO_INCREMENT,
 	    PRIMARY KEY(id),
 	    UNIQUE(dirname,basename),
+	    KEY(fullname),
 	    KEY(basename)) ENGINE = INNODB
 	IGNORE
-	SELECT substring_index(path, "/", -1) AS basename,
+	SELECT path AS fullname, substring_index(path, "/", -1) AS basename,
 	    left(path, char_length(path)-char_length(substring_index(path, "/", -1))) AS dirname
 	    FROM node;
 ALTER TABLE node ADD COLUMN pid INT;
 
 UPDATE node 
-    INNER JOIN path ON node.path = concat_ws("/", dirname,basename)
+    INNER JOIN path ON node.path = fullname
     SET node.pid = path.id;
 ALTER TABLE node DROP PRIMARY KEY,
-    CHANGE pid pid INT PRIMARY KEY NOT NULL,
-    ADD FOREIGN KEY pid REFERENCES path(id),
+    CHANGE pid pid INT NOT NULL,
+    ADD PRIMARY KEY (date, pid),
+    ADD FOREIGN KEY (pid) REFERENCES path(id),
     DROP COLUMN node.path;
+ALTER TABLE path DROP COLUMN fullname;
+
+ALTER TABLE file CHANGE status status enum('?','X','OK','COPYRIGHT')
+				    NOT NULL DEFAULT '?';
 
 UPDATE config SET value='1' where name='version';
 
