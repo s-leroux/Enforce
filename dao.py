@@ -2,6 +2,8 @@ import os
 import magic
 import hashlib
 import MySQLdb
+from warnings import filterwarnings
+from log import Log
 
 import config
 
@@ -15,16 +17,22 @@ class DAO:
 				    db=config.DBName, 
 				    user=config.DBUser)
 	
-	self.createDB()
 	self.updateDBVersion()
 
     def createDB(self):
+	filterwarnings('ignore', category = MySQLdb.Warning)
 	self.runSQLScript("./sql/CreateDB.sql")
+	filterwarnings('default', category = MySQLdb.Warning)
 
     def updateDBVersion(self):
-	version = int(self.getDBVersion())
-	c=self.db.cursor();
+	version = self.getDBVersion()
+	if version == None:
+	    self.createDB()
+	    version = self.getDBVersion()
+
+	version = int(version)
 	if version < 1:
+	    Log.echo("INFO", "Updating to DB version 1");
 	    self.runSQLScript("./sql/UpdateDBToVersion1.sql")
 
     def runSQLScript(self,script):
@@ -36,7 +44,7 @@ class DAO:
 		for statement in script.split(";"):
 		    statement = statement.strip()
 		    if statement != "":
-			print "SQL: %s" % statement
+			Log.write("SQL", statement)
 			c.execute(statement)
 		self.db.commit()
 	finally:
@@ -45,9 +53,13 @@ class DAO:
     def getDBVersion(self):
 	c=self.db.cursor()
 	try:
+	    filterwarnings('ignore', category = MySQLdb.Warning)
 	    c.execute("""SELECT value FROM config WHERE name='version'""")
+	    filterwarnings('default', category = MySQLdb.Warning)
 	    row = c.fetchone();
 	    return row[0]
+	except:
+	    return None
 	finally:
 	    c.close()
 
@@ -91,13 +103,6 @@ class DAO:
 
 	c=self.db.cursor()
 	try:
-	    print("""SELECT DISTINCT file.hash,file.mimetype, path.dirname, path.basename 
-				FROM file JOIN node USING (hash)
-					    INNER JOIN path ON node.pid = path.id
-				%s
-				ORDER BY file.hash
-				%s
-				""" % (where, limit))
 	    c.execute("""SELECT DISTINCT file.hash,file.mimetype, path.dirname, path.basename 
 				FROM file JOIN node USING (hash)
 					    INNER JOIN path ON node.pid = path.id
