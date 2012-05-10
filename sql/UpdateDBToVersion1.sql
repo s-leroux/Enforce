@@ -28,6 +28,7 @@ ALTER TABLE node DROP PRIMARY KEY,
     DROP COLUMN node.path;
 ALTER TABLE path DROP COLUMN fullname;
 
+UPDATE file SET status = '?' WHERE status IS NULL;
 ALTER TABLE file CHANGE status status enum('?','X','OK','COPYRIGHT')
 				    NOT NULL DEFAULT '?';
 
