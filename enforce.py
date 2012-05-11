@@ -23,6 +23,8 @@ for root, dirs, files in os.walk(config.BaseDirectory):
 	try:
 	    file = File(root, name)
 	    processFile(dao, file)
+	except OSError as (errno, strerror):
+	    print "E : OSError", errno, "while processing", name, "(",strerror,")"
 	except IOError as (errno, strerror):
 	    print "E : IOError", errno, "while processing", name, "(",strerror,")"
 dao.done()

@@ -33,7 +33,7 @@ class DAO:
 	c.close()
 	
 	version = int(self.getDBVersion())
-	for v in (1,2):
+	for v in (1,2,3):
 	    if version < v:
 		Log.echo("INFO", "Updating DB to version %d" % v);
 		self.runSQLScript("./sql/UpdateDBToVersion%d.sql" % v)
@@ -70,9 +70,9 @@ class DAO:
 	c=self.db.cursor()
 	try:
 	    c.execute("""INSERT IGNORE
-			    INTO file (hash, mimetype, size)
-			    VALUES (%s, %s, %s)""",
-			    (file.hash, file.mimetype, file.size))
+			    INTO file (hash, stime, mimetype, size)
+			    VALUES (%s, %s, %s, %s)""",
+			    (file.hash, theDate, file.mimetype, file.size))
 	    c.execute("""INSERT IGNORE
 			    INTO path (basename, dirname)
 			    VALUES (%s, %s)""",
@@ -142,11 +142,39 @@ class DAO:
     def mark(self, hash, status):
 	c=self.db.cursor()
 	try:
-	    c.execute("""UPDATE file SET status = %s WHERE hash = %s""",
-			(status, hash))
+	    c.execute("""UPDATE file SET status = %s, stime = %s 
+			WHERE hash = %s""",
+			(status, theDate, hash))
 	    self.db.commit()
 	finally:
 	    c.close()
+
+    def getInfoByHash(self, hash):
+	c=self.db.cursor()
+	try:
+	    result = {}
+	    c.execute("""SELECT hash,size,mimetype,status 
+	    			FROM file WHERE hash = %s""", hash)
+	    row = c.fetchone()
+
+	    result["hash"] = row[0]
+	    result["size"] = row[1]
+	    result["mimetype"] = row[2]
+	    result["status"] = row[3]
+
+	    c.execute("""SELECT date,owner,concat(dirname,basename)
+	    		    FROM node JOIN path ON pid=id
+			    WHERE hash = %s""", hash)
+	    result["path"] = c.fetchall()
+	        
+
+	    return result
+	except:
+	    return None
+	finally:
+	    c.close()
+    	
+
 	
 	
 
