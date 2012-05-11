@@ -10,6 +10,7 @@ CREATE TABLE session (date DATETIME NOT NULL,
 			PRIMARY KEY(date),
 			FOREIGN KEY (date) REFERENCES node(date))
 		    ENGINE=InnoDB;
+INSERT INTO session(date) SELECT DISTINCT date FROM node;
 
 UPDATE config SET value = '2' WHERE name = 'version';
 
