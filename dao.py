@@ -33,7 +33,7 @@ class DAO:
 	c.close()
 	
 	version = int(self.getDBVersion())
-	for v in (1,2,3):
+	for v in (1,2,3,4):
 	    if version < v:
 		Log.echo("INFO", "Updating DB to version %d" % v);
 		self.runSQLScript("./sql/UpdateDBToVersion%d.sql" % v)
@@ -162,9 +162,13 @@ class DAO:
 	    result["mimetype"] = row[2]
 	    result["status"] = row[3]
 
-	    c.execute("""SELECT date,owner,concat(dirname,basename)
-	    		    FROM node JOIN path ON pid=id
-			    WHERE hash = %s""", hash)
+	    c.execute("""SELECT session.date,owner,concat(dirname,basename)
+	    		    FROM (SELECT * FROM node 
+						JOIN path ON pid=id
+					WHERE hash = %s
+					ORDER BY owner ASC, date ASC) AS n 
+			    RIGHT JOIN session
+			    USING(date)""", hash)
 	    result["path"] = c.fetchall()
 	        
 
@@ -174,7 +178,4 @@ class DAO:
 	finally:
 	    c.close()
     	
-
-	
-	
 
