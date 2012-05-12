@@ -107,28 +107,48 @@ class DAO:
     def exfilter(self, **options):
 	if not "status" in options:
 	    options["status"] = '?' # default to untagged files
+	if not "filename" in options:
+	    options["filename"] = ()
+	if not "mimetype" in options:
+	    options["mimetype"] = ()
+	if not "limit" in options:
+	    options["limit"] = 1000
 
-	limit = ""
-	if "limit" in options:
-	    limit = "LIMIT %d" % options["limit"]
+	query = """SELECT DISTINCT file.hash,file.mimetype, 
+				    path.dirname, path.basename 
+		    FROM file 
+		    JOIN node USING (hash)
+		    INNER JOIN path ON node.pid = path.id
+		    WHERE 
+		    """
+	params = []
+	# WHERE clause
+	opt = options["mimetype"]
+	if opt:
+	    params += opt
+	    query += "(" + " OR ".join(("mimetype LIKE %s",)*len(opt)) + """) AND
+		"""
 
-	where = "WHERE 1"
-	if "status" in options:
-	    where += " AND status='%s'" % options["status"]
-	if "mimetype" in options:
-	    where += " AND mimetype LIKE '%s'" % options["mimetype"]
-	if "filename" in options:
-	    where += " AND basename LIKE '%s'" % options["filename"]
+	opt = options["filename"]
+	if opt:
+	    params += opt
+	    query += "(" + " OR ".join(("basename LIKE %s",)*len(opt)) + """) AND
+		"""
+
+	query += """1
+		"""
+
+	# ORDER BY clause
+	query += """ORDER BY file.hash
+		"""
+
+	# LIMIT clause
+	query += """LIMIT %d
+		""" % options["limit"]
 
 	c=self.db.cursor()
 	try:
-	    c.execute("""SELECT DISTINCT file.hash,file.mimetype, path.dirname, path.basename 
-				FROM file JOIN node USING (hash)
-					    INNER JOIN path ON node.pid = path.id
-				%s
-				ORDER BY file.hash
-				%s
-				""" % (where, limit))
+	    c.execute(query, params)
 	    while True:
 		row = c.fetchone()
 		if row:

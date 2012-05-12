@@ -1,4 +1,23 @@
 #!/usr/bin/python
+import argparse
+
+parser = argparse.ArgumentParser()
+parser.add_argument("--mime", 
+		    help="""Extract files by their mime/type""",
+		    action="append",
+		    default=[])
+parser.add_argument("--name", 
+		    help="""Extract image/jpeg files""",
+		    action="append",
+		    default=[])
+parser.add_argument("--limit", 
+		    help="""Limit the number of files extracted""",
+		    action="store",
+		    type=int,
+		    default=1000)
+
+args = parser.parse_args()
+
 import os
 import shutil
 import mimetypes
@@ -11,16 +30,6 @@ from file import File
 #
 dao = DAO()
 
-mt=None
-#mt="video/mpeg"
-#mt="image/jpeg"
-#mt="image/gif"
-#mt="image/png"
-fn=None
-mt="video/%"
-mt="audio/mpeg"
-#fn="%.exe"
-
 for dir in (config.ExfilterDirectory, config.OKDirectory, 
 		config.COPYRIGHTDirectory, config.XDirectory):
 	if not os.path.isdir(dir):
@@ -28,7 +37,9 @@ for dir in (config.ExfilterDirectory, config.OKDirectory,
 		os.mkdir(dir)
 
 prevdst = ""
-for (hash, mimetype, path,file) in dao.exfilter(mimetype=mt,limit=2000):
+for (hash, mimetype, path,file) in dao.exfilter(mimetype=args.mime,
+						filename=args.name,
+						limit=args.limit):
     ext = mimetypes.guess_extension(mimetype)
     src = os.path.join(path,file)
     dst = os.path.join(config.ExfilterDirectory, "%s%s") % (hash,ext)
