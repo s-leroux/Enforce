@@ -135,6 +135,12 @@ class DAO:
 	    query += "(" + " OR ".join(("basename LIKE %s",)*len(opt)) + """) AND
 		"""
 
+	opt = options["status"]
+	if opt:
+	    params += opt
+	    query += "(" + " OR ".join(("status = %s",)*len(opt)) + """) AND
+		"""
+
 	query += """1
 		"""
 
