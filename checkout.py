@@ -37,17 +37,28 @@ for dir in (config.ExfilterDirectory, config.OKDirectory,
 		os.mkdir(dir)
 
 prevdst = ""
+count = 0
 for (hash, mimetype, path,file) in dao.exfilter(mimetype=args.mime,
-						filename=args.name,
-						limit=args.limit):
+						filename=args.name):
     ext = mimetypes.guess_extension(mimetype)
     src = os.path.join(path,file)
     dst = os.path.join(config.ExfilterDirectory, "%s%s") % (hash,ext)
     if dst != prevdst:
         try:    
     	    shutil.copy2(src, dst)
-    	    print ">", dst,"(",src,")"
-	    prevdst = dst
+
+	    f = File(config.ExfilterDirectory,hash+ext)
+	    if f.hash != hash:
+		# Non matchinh hash occurs when the target file has changed
+		# since last check
+		print "*", dst,"(",src,")"
+		os.unlink(dst)
+	    else:
+	        print ">", dst,"(",src,")"
+	        prevdst = dst
+		count = count+1
+		if count == args.limit:
+		    break
         except IOError, e:	
     	    print "X", dst,"(",src,")", e.args[1]
     else:

@@ -111,8 +111,6 @@ class DAO:
 	    options["filename"] = ()
 	if not "mimetype" in options:
 	    options["mimetype"] = ()
-	if not "limit" in options:
-	    options["limit"] = 1000
 
 	query = """SELECT DISTINCT file.hash,file.mimetype, 
 				    path.dirname, path.basename 
@@ -144,13 +142,10 @@ class DAO:
 	query += """1
 		"""
 
-	# ORDER BY clause
-	query += """ORDER BY file.hash
-		"""
-
 	# LIMIT clause
-	query += """LIMIT %d
-		""" % options["limit"]
+	if "limit" in options:
+	    query += """LIMIT %d
+		     """ % options["limit"]
 
 	c=self.db.cursor()
 	try:
