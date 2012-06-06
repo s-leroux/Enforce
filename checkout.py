@@ -41,13 +41,15 @@ count = 0
 for (hash, mimetype, path,file) in dao.exfilter(mimetype=args.mime,
 						filename=args.name):
     ext = mimetypes.guess_extension(mimetype)
+    if ext is None:
+	ext = ".unknown"
     src = os.path.join(path,file)
     dst = os.path.join(config.ExfilterDirectory, "%s%s") % (hash,ext)
     if dst != prevdst:
         try:    
     	    shutil.copy2(src, dst)
 
-	    f = File(config.ExfilterDirectory,hash+ext)
+	    f = File(config.ExfilterDirectory,"%s%s" % (hash,ext))
 	    if f.hash != hash:
 		# Non matchinh hash occurs when the target file has changed
 		# since last check
